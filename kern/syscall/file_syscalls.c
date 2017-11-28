@@ -29,22 +29,32 @@ sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
 {
 	const int allflags = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NOCTTY;
 
-	char *kpath;
-	struct openfile *file;
-	int result = 0;
+	char *kpath = NULL;
+	struct openfile *file = NULL;
+	int result;
 
-	/* 
-	 * Your implementation of system call open starts here.  
+	if(flags != allflags){
+		return -1;
+	}
+
+	kpath = (void *)kmalloc(32+1);
+	result = copyin(upath, (void *)kpath, 32+1);
+	if(result){
+		return result;
+	}
+
+	result = openfile_open(kpath, flags, mode, &file);
+	if(result){
+		return result;
+	}
+	result = filetable_place(curthread->t_proc->p_filetable, file, 0);
+
+	/*
+	 * Your implementation of system call open starts here.
 	 *
 	 * Check the design document design/filesyscall.txt for the steps
 	 */
-	(void) upath; // suppress compilation warning until code gets written
-	(void) flags; // suppress compilation warning until code gets written
-	(void) mode; // suppress compilation warning until code gets written
-	(void) retval; // suppress compilation warning until code gets written
-	(void) allflags; // suppress compilation warning until code gets written
-	(void) kpath; // suppress compilation warning until code gets written
-	(void) file; // suppress compilation warning until code gets written
+	 retval = *file;
 
 	return result;
 }
@@ -57,8 +67,8 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
 {
        int result = 0;
 
-       /* 
-        * Your implementation of system call read starts here.  
+       /*
+        * Your implementation of system call read starts here.
         *
         * Check the design document design/filesyscall.txt for the steps
         */
@@ -78,6 +88,6 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
  * close() - remove from the file table.
  */
 
-/* 
+/*
 * meld () - combine the content of two files word by word into a new file
 */
