@@ -29,34 +29,41 @@ sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
 {
 	const int allflags = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NOCTTY;
 
-	char *kpath = NULL;
-	struct openfile *file = NULL;
+	char *kpath;
+	struct openfile *file;
 	int result;
 
 	if(flags != allflags){
+		*retval = EINVAL;
+		return -1;
+	}
+	if(upath == NULL){
+		*retval = EFAULT;
 		return -1;
 	}
 
 	kpath = (void *)kmalloc(32+1);
 	result = copyin(upath, (void *)kpath, 32+1);
 	if(result){
-		return result;
+		*retval = result;
+		return -1;
 	}
 
 	result = openfile_open(kpath, flags, mode, &file);
 	if(result){
-		return result;
+		*retval = result;
+		return -1;
 	}
-	result = filetable_place(curthread->t_proc->p_filetable, file, 0);
+	result = filetable_place(curthread->t_proc->p_filetable, file, retval);
 
 	/*
 	 * Your implementation of system call open starts here.
 	 *
 	 * Check the design document design/filesyscall.txt for the steps
 	 */
-	 retval = *file;
+	 //retval = *file;
 
-	return result;
+	return 0;
 }
 
 /*
@@ -66,6 +73,13 @@ int
 sys_read(int fd, userptr_t buf, size_t size, int *retval)
 {
        int result = 0;
+
+			 if(fd < 0 || fd > MAX_FILE_DESCRIPTOR){
+				 *retval = EBADF;
+				 return -1;
+			 }
+			 result = filetable_get(ft, fd, file);
+
 
        /*
         * Your implementation of system call read starts here.
