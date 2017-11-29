@@ -29,7 +29,7 @@ sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
 {
 	const int allflags = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NOCTTY;
 
-	char *kpath;
+	char *kpath = (char *)kmalloc(sizeof(char)*PATH_MAX);
 	struct openfile *file;
 	int result;
 
@@ -42,27 +42,31 @@ sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
 		return -1;
 	}
 
-	kpath = (void *)kmalloc(32+1);
-	result = copyin(upath, (void *)kpath, 32+1);
-	if(result){
-		*retval = result;
-		return -1;
-	}
+	result = copyinstr(upath, kpath, PATH_MAX, NULL);
+
 
 	result = openfile_open(kpath, flags, mode, &file);
 	if(result){
 		*retval = result;
 		return -1;
 	}
-	result = filetable_place(curthread->t_proc->p_filetable, file, retval);
+	result = filetable_place(curthread->t_proc->p_filetable, file, NULL);
+	if(result){
+		*retval = result;
+		return -1;
+	}
 
 	/*
 	 * Your implementation of system call open starts here.
 	 *
 	 * Check the design document design/filesyscall.txt for the steps
 	 */
-	 //retval = *file;
-
+	 *retval = result;
+	 /*(void) upath; // suppress compilation warning until code gets written
+	 (void) flags; // suppress compilation warning until code gets written
+	 (void) mode; // suppress compilation warning until code gets written
+	 (void) retval; // suppress compilation warning unt
+*/
 	return 0;
 }
 
@@ -73,12 +77,25 @@ int
 sys_read(int fd, userptr_t buf, size_t size, int *retval)
 {
        int result = 0;
+			 struct openfile *file;
 
-			 if(fd < 0 || fd > MAX_FILE_DESCRIPTOR){
+			 if(fd < 0 || fd > 2){
 				 *retval = EBADF;
 				 return -1;
 			 }
-			 result = filetable_get(ft, fd, file);
+			 result = filetable_get(curthread->t_proc->p_filetable, fd, &file);
+
+			 spinlock_acquire(&file->of_reflock);
+			 if(file->of_accmode == O_WRONLY){
+				 *retval = EBADF;
+				 spinlock_release(&file->of_reflock);
+				 return EBADF;
+			 }
+
+			 /*struct uio x;
+			 x.uio_rw = UIO_READ;
+			 *retval= VOP_READ(file, &x);
+			 */spinlock_release(&file->of_reflock);
 
 
        /*
@@ -97,11 +114,52 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
 /*
  * write() - write data to a file
  */
+ int
+ sys_write(int fd, userptr_t buf, size_t size, int *retval){
+	 int result = 0;
+	 struct openfile *file;
+
+	 if(fd < 0 || fd > 2){
+		 *retval = EBADF;
+		 return -1;
+	 }
+	 result = filetable_get(curthread->t_proc->p_filetable, fd, &file);
+
+	 spinlock_acquire(&file->of_reflock);
+	 if(file->of_accmode == O_RDONLY){
+		 *retval = EBADF;
+		 spinlock_release(&file->of_reflock);
+		 return EBADF;
+	 }
+
+	 /*struct uio x;
+	 x.uio_rw = UIO_WRITE;
+	 *retval= VOP_WRITE(file, &x);*/
+	 spinlock_release(&file->of_reflock);
+
+	 (void)fd;
+	 (void) buf;
+	 (void) size;
+	 (void) retval;
+	 return result;
+ }
 
 /*
  * close() - remove from the file table.
  */
+ int sys_close(int fd){
+	 (void) fd;
+	 return 0;
+ }
 
 /*
 * meld () - combine the content of two files word by word into a new file
 */
+int sys_meld(char *pn1, char *pn2, char *pn3){
+	//im guessing we create file 3 if it doesnt not exist and then writing into file 3 what we read into file one and writing in what we read from file 2 into
+	(void) pn1;
+	(void) pn2;
+	(void) pn3;
+
+	return 0;
+}
