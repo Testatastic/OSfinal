@@ -123,7 +123,7 @@ ssize_t read(int filehandle, void *buf, size_t size);
 ssize_t write(int filehandle, const void *buf, size_t size);
 int close(int filehandle);
 int reboot(int code);
-int meld(char *pn1, char *pn2, char *pn3);
+int meld(const char *pidA,const char *pidB,const char *pidC);
 int sync(void);
 /* mkdir - see sys/stat.h */
 int rmdir(const char *dirname);

@@ -6,22 +6,21 @@
 int
 main()
 {
-static char writebuf[40] = "Twiddle dee dee, Twiddle dum dum.......\n";
-//	static char readbuf[41];
+	//static char readbuf[41];
 
-	const char *file;
-	int fd, rv;
-file = "testfile";
+	const char *fileA, *fileB, *fileC;
+	int rv;
 
-	printf("123456\n");
+	
+		/*warnx("No arguments - running on \"testfile\"");*/
+		fileA = "testA";
+		fileB = "testB";
+		fileC = "testC";
 
-fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0664);
-	if (fd<0) {
-		err(1, "%s: open for write %d", file, fd);
-	}
-rv = write(fd, writebuf, 40);
+
+	rv = meld(fileA,fileB, fileC);
 	if (rv<0) {
-		err(1, "%s: write", file);
+		err(1, "MeldError");
 	}
-	return 0;
+return 0;
 }

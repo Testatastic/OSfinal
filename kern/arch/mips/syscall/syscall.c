@@ -145,9 +145,9 @@ syscall(struct trapframe *tf)
                          &err);
 		break;
 
-	/*case SYS_meld:
+	case SYS_meld:
 		retval = sys_meld((userptr_t)tf->tf_a0,(userptr_t)tf->tf_a1,(userptr_t)tf->tf_a2);
-			break;*/
+			break;
 
             /* Project 3:
              * Add more for meld, close, and write . */

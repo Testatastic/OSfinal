@@ -27,43 +27,42 @@
 int
 sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
 {
-	//const int allflags = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NOCTTY;
+	const int allflags = O_ACCMODE | O_CREAT | O_EXCL | O_TRUNC | O_APPEND | O_NOCTTY;
 
 	char kpath[PATH_MAX + NAME_MAX];
 	struct openfile *file;
 	int result;
 	size_t T;
 
-	//if(flags == allflags){
-		//*retval = EFAULT;
-		//return -1;
-	//}
+	if(flags == allflags){
+		*retval = EFAULT;
+		return -1;
+	}
 
 
 	if(upath == NULL){
-		//*retval = EFAULT;
+		*retval = EFAULT;
 		return -1;
 	}
 
 	result = copyinstr((const_userptr_t)upath, kpath, (strlen((char *)upath)+1) * sizeof(char), &T);
 	if(result){
-		//*retval = EFAULT;
+		*retval = EFAULT;
 		return -1;
 	}
 
 	result = openfile_open((char *)kpath, flags, mode, &file);
 	if(result){
-		//*retval = EFAULT;
+		*retval = EFAULT;
 		return -1;
 	}
 	result = filetable_place(curthread->t_proc->p_filetable, file, retval);
 	if(result){
-		//*retval = result;
+		*retval = result;
 		return -1;
 	}
 result = *retval;
 *retval = 0;
-//kfree(kpath);
 	return result;
 }
 
@@ -165,30 +164,6 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
       (this means no such file was open)
     - decref the open file returned by filetable_placeat
 
-		void
-		filetable_placeat(struct filetable *ft, struct openfile *newfile, int fd,
-				  struct openfile **oldfile_ret)
-		{
-			ft->ft_openfiles[fd] = newfile;
-		}
-
-		int
-		filetable_get(struct filetable *ft, int fd, struct openfile **ret)
-		{
-			struct openfile *file;
-
-			if (!filetable_okfd(ft, fd)) {
-				return EBADF;
-			}
-
-			file = ft->ft_openfiles[fd];
-			if (file == NULL) {
-				return EBADF;
-			}
-
-			*ret = file;
-			return 0;
-		}
 
  */
  int sys_close(int fd){
@@ -226,12 +201,92 @@ sys_meld needs to:
    - refer to sys_write() for writing the third file
    - refer to sys_close() to complete the use of three files
    - set the return value correctly for successful completion
+
+	 sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
+	 sys_write(int fd, userptr_t buf, size_t size, int *retval){
+	 int sys_close(int fd
+
+
 */
-int sys_meld(char *pn1, char *pn2, char *pn3){
-	//im guessing we create file 3 if it doesnt not exist and then writing into file 3 what we read into file one and writing in what we read from file 2 into
-	(void) pn1;
-	(void) pn2;
-	(void) pn3;
+int sys_meld(const_userptr_t filenameA, const_userptr_t filenameB, const_userptr_t filenameC){
+
+	char pathA [1000];
+	char pathB [1000];
+	char pathC [1000];
+	mode_t mode = 0666;
+	int *retval = 0;
+
+
+	struct openfile *fileA, *fileB, *fileC;
+	int result;
+	size_t T;
+
+
+	result = copyinstr((const_userptr_t)filenameA, pathA, (strlen((char *)filenameA)+1) * sizeof(char), &T);
+	if(result){
+		return -1;
+	}
+	result = copyinstr((const_userptr_t)filenameB, pathB, (strlen((char *)filenameA)+1) * sizeof(char), &T);
+	if(result){
+		return -1;
+	}
+	result = copyinstr((const_userptr_t)filenameC, pathC, (strlen((char *)filenameA)+1) * sizeof(char), &T);
+	if(result){
+		return -1;
+	}
+
+	result = openfile_open((char *)pathA, O_RDONLY, mode, &fileA);
+	if(result){
+		return -1;
+	}
+	result = openfile_open((char *)pathB, O_RDONLY, mode, &fileB);
+	if(result){
+		return -1;
+	}
+	result = openfile_open((char *)pathC, O_RDONLY, mode, &fileC);
+	if(result){
+		return -1;
+	}
+	result = filetable_place(curthread->t_proc->p_filetable, fileA, retval);
+	if(result){
+		*retval = result;
+		return -1;
+	}
+	result = filetable_place(curthread->t_proc->p_filetable, fileB, retval);
+	if(result){
+		*retval = result;
+		return -1;
+	}
+	result = filetable_place(curthread->t_proc->p_filetable, fileC, retval);
+	if(result){
+		*retval = result;
+		return -1;
+	}
+
+	/*lock_acquire(fileA->of_offsetlock);
+	if(fileA->of_accmode == O_WRONLY){
+		*retval = EBADF;
+		lock_release(file->of_offsetlock);
+		return EBADF;
+	}
+
+	struct uio x;
+	struct iovec y;
+	uio_kinit(&y, &x, buf, size, 0, UIO_READ);
+	result = VOP_READ(file->of_vnode, &x);
+	if(result){
+		*retval = result;
+		return -1;
+	}
+	file->of_offset = x.uio_offset;
+	lock_release(file->of_offsetlock);
+	*retval = size - x.uio_resid;
+	*retval = 0;*/
+
+	//int result = 0;
+	//result = sys_open(filenameA, O_RDONLY)
+
+
 
 	return 0;
 }
