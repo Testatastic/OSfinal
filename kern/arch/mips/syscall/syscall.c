@@ -126,7 +126,8 @@ syscall(struct trapframe *tf)
                 break;
 
 	    case SYS_close:
-		retval = sys_close(tf->tf_a0);
+			retval = sys_close(tf->tf_a0);
+			err = retval;
 		break;
 
             case SYS_read:
@@ -138,15 +139,15 @@ syscall(struct trapframe *tf)
                 break;
 	    case SYS_write:
 		retval = sys_write(
-                         tf->tf_a0, 
-                         (userptr_t)tf->tf_a1, 
-                         tf->tf_a2, 
+                         tf->tf_a0,
+                         (userptr_t)tf->tf_a1,
+                         tf->tf_a2,
                          &err);
 		break;
 
-					/*case SYS_meld:
-						retval = sys_meld((userptr_t)tf->tf_a0,(userptr_t)tf->tf_a1,(userptr_t)tf->tf_a2);
-							break;*/
+	/*case SYS_meld:
+		retval = sys_meld((userptr_t)tf->tf_a0,(userptr_t)tf->tf_a1,(userptr_t)tf->tf_a2);
+			break;*/
 
             /* Project 3:
              * Add more for meld, close, and write . */
