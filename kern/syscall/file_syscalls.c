@@ -32,41 +32,36 @@ sys_open(const_userptr_t upath, int flags, mode_t mode, int *retval)
 	char *kpath = (char *)kmalloc(sizeof(char)*PATH_MAX);
 	struct openfile *file;
 	int result;
+	size_t T;
 
-	if(flags != allflags){
-		*retval = EINVAL;
+	if(flags == allflags){
 		return -1;
 	}
+
+
 	if(upath == NULL){
 		*retval = EFAULT;
 		return -1;
 	}
 
-	result = copyinstr(upath, kpath, PATH_MAX, NULL);
+	result = copyinstr((const_userptr_t)upath, kpath, PATH_MAX, &T);
+	if(result){
+		*retval = EFAULT;
+		return -1;
+	}
 
-
-	result = openfile_open(kpath, flags, mode, &file);
+	result = openfile_open((char *)kpath, flags, mode, &file);
 	if(result){
 		*retval = result;
 		return -1;
 	}
-	result = filetable_place(curthread->t_proc->p_filetable, file, NULL);
+	result = filetable_place(curthread->t_proc->p_filetable, file, retval);
 	if(result){
 		*retval = result;
 		return -1;
 	}
 
-	/*
-	 * Your implementation of system call open starts here.
-	 *
-	 * Check the design document design/filesyscall.txt for the steps
-	 */
-	 *retval = result;
-	 /*(void) upath; // suppress compilation warning until code gets written
-	 (void) flags; // suppress compilation warning until code gets written
-	 (void) mode; // suppress compilation warning until code gets written
-	 (void) retval; // suppress compilation warning unt
-*/
+kfree(kpath);
 	return 0;
 }
 
@@ -79,11 +74,15 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
        int result = 0;
 			 struct openfile *file;
 
-			 if(fd < 0 || fd > 2){
+			 if(fd < 0 || fd > PATH_MAX){
 				 *retval = EBADF;
 				 return -1;
 			 }
 			 result = filetable_get(curthread->t_proc->p_filetable, fd, &file);
+			 if(result){
+				 *retval = result;
+				 return -1;
+			 }
 
 			 spinlock_acquire(&file->of_reflock);
 			 if(file->of_accmode == O_WRONLY){
@@ -92,10 +91,17 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
 				 return EBADF;
 			 }
 
-			 /*struct uio x;
-			 x.uio_rw = UIO_READ;
-			 *retval= VOP_READ(file, &x);
-			 */spinlock_release(&file->of_reflock);
+			 struct uio x;
+			 struct iovec y;
+			 uio_kinit(&y, &x, buf, size, 0, UIO_READ);
+			 result = VOP_READ(file->of_vnode, &x);
+			 if(result){
+				 *retval = result;
+				 return -1;
+			 }
+			 file->of_offset = x.uio_offset;
+			 spinlock_release(&file->of_reflock);
+			 *retval = size - x.uio_resid;
 
 
        /*
@@ -103,12 +109,9 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
         *
         * Check the design document design/filesyscall.txt for the steps
         */
-       (void) fd; // suppress compilation warning until code gets written
-       (void) buf; // suppress compilation warning until code gets written
-       (void) size; // suppress compilation warning until code gets written
-       (void) retval; // suppress compilation warning until code gets written
 
-       return result;
+
+       return 0;
 }
 
 /*
@@ -119,7 +122,7 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
 	 int result = 0;
 	 struct openfile *file;
 
-	 if(fd < 0 || fd > 2){
+	 if(fd < 0 || fd > PATH_MAX){
 		 *retval = EBADF;
 		 return -1;
 	 }
@@ -132,16 +135,20 @@ sys_read(int fd, userptr_t buf, size_t size, int *retval)
 		 return EBADF;
 	 }
 
-	 /*struct uio x;
-	 x.uio_rw = UIO_WRITE;
-	 *retval= VOP_WRITE(file, &x);*/
+	 struct uio x;
+	 struct iovec y;
+	 uio_kinit(&y, &x, buf, size, 0, UIO_WRITE);
+	 //x.uio_rw = UIO_WRITE;
+	 result = VOP_WRITE(file->of_vnode, &x);
+	 if(result){
+		 *retval = result;
+		 return -1;
+	 }
+	 file->of_offset = x.uio_offset;
 	 spinlock_release(&file->of_reflock);
+	 *retval = size - x.uio_resid;
 
-	 (void)fd;
-	 (void) buf;
-	 (void) size;
-	 (void) retval;
-	 return result;
+	 return 0;
  }
 
 /*

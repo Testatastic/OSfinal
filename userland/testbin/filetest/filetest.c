@@ -46,30 +46,30 @@
 int
 main(int argc, char *argv[])
 {
-	//static char writebuf[40] = "Twiddle dee dee, Twiddle dum dum.......\n";
-	/*static char readbuf[41];
+	static char writebuf[40] = "Twiddle dee dee, Twiddle dum dum.......\n";
+	static char readbuf[41];
 
 	const char *file;
 	int fd, rv;
 
-	if (argc == 0) {*/
+	if (argc == 0) {
 		/*warnx("No arguments - running on \"testfile\"");*/
-		/*file = "testfile";
+		file = "testfile";
 	}
 	else if (argc == 2) {
 		file = argv[1];
 	}
 	else {
 		errx(1, "Usage: filetest <filename>");
-	}*/
+	}
 
-	/*fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0664);
+	fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0664);
 	if (fd<0) {
 		err(1, "%s: open for write", file);
-	}*/
+	}
 
 
-	/*rv = write(fd, writebuf, 40);
+	rv = write(fd, writebuf, 40);
 	if (rv<0) {
 		err(1, "%s: write", file);
 	}
@@ -93,13 +93,13 @@ main(int argc, char *argv[])
 	printf("Closing fd=%d retval=%d.\n", fd, rv);
 	if (rv<0) {
 		err(1, "%s: close (2nd time)", file);
-	}*/
+	}
 	/* ensure null termination */
-	//readbuf[40] = 0;
+	readbuf[40] = 0;
 
-	//if (strcmp(readbuf, writebuf)) {
-		//errx(1, "Buffer data mismatch!");
-	//}
+	if (strcmp(readbuf, writebuf)) {
+		errx(1, "Buffer data mismatch!");
+	}
 
 /*	rv = remove(file);
 	if (rv<0) {

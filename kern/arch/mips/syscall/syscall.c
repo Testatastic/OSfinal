@@ -124,23 +124,28 @@ syscall(struct trapframe *tf)
                         tf->tf_a2,
                         &err);
                 break;
-						case SYS_close:
-										err = sys_close(tf->tf_a0);
-										break;
+
+	    case SYS_close:
+		retval = sys_close(tf->tf_a0);
+		break;
 
             case SYS_read:
-                err = sys_read(
+                retval = sys_read(
                         tf->tf_a0,
                         (userptr_t)tf->tf_a1,
                         tf->tf_a2,
-                        &retval);
+                        &err);
                 break;
-						case SYS_write:
-							err = sys_write(tf->tf_a0, (userptr_t)tf->tf_a1, tf->tf_a2, &retval);
-								break;
+	    case SYS_write:
+		retval = sys_write(
+                         tf->tf_a0, 
+                         (userptr_t)tf->tf_a1, 
+                         tf->tf_a2, 
+                         &err);
+		break;
 
 					/*case SYS_meld:
-						err = sys_meld((userptr_t)tf->tf_a0,(userptr_t)tf->tf_a1,(userptr_t)tf->tf_a2);
+						retval = sys_meld((userptr_t)tf->tf_a0,(userptr_t)tf->tf_a1,(userptr_t)tf->tf_a2);
 							break;*/
 
             /* Project 3:
